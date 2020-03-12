@@ -2,8 +2,11 @@ import React, {
   useState,
   useLayoutEffect,
   useCallback,
+  useRef,
   createContext,
-  useMemo
+  useContext,
+  useMemo,
+  useEffect
 } from "react";
 import mojs from "mo-js";
 import styles from "./index.css";
@@ -104,7 +107,8 @@ const useClapAnimation = ({ clapEl, countEl, clapTotalEl }) => {
 
 const MediumClapContext = createContext();
 const { Provider } = MediumClapContext;
-const MediumClap = ({ children }) => {
+
+const MediumClap = ({ children, onClap }) => {
   const MAXIMUM_USER_CLAP = 50;
   const [clapState, setClapState] = useState(initialState);
   const { count } = clapState;
@@ -123,6 +127,14 @@ const MediumClap = ({ children }) => {
     countEl: clapCountRef,
     clapTotalEl: clapTotalRef
   });
+
+  const componentJustMounted = useRef(true);
+  useEffect(() => {
+    if (!componentJustMounted.current) {
+      onClap && onClap(clapState);
+    }
+    componentJustMounted.current = false;
+  }, [count]);
 
   const handleClapClick = () => {
     animationTimelineNew.replay();
@@ -156,11 +168,8 @@ const MediumClap = ({ children }) => {
   );
 };
 
-/**
- * subcomponents
- */
-
-const ClapCount = ({ count, setRef }) => {
+const ClapCount = () => {
+  const { count, setRef } = useContext(MediumClapContext);
   return (
     <span ref={setRef} data-refkey="clapCountRef" className={styles.count}>
       + {count}
@@ -168,7 +177,8 @@ const ClapCount = ({ count, setRef }) => {
   );
 };
 
-const CountTotal = ({ countTotal, setRef }) => {
+const CountTotal = () => {
+  const { countTotal, setRef } = useContext(MediumClapContext);
   return (
     <span ref={setRef} data-refkey="clapTotalRef" className={styles.total}>
       {countTotal}
@@ -176,7 +186,8 @@ const CountTotal = ({ countTotal, setRef }) => {
   );
 };
 
-const ClapIcon = ({ isClicked }) => {
+const ClapIcon = () => {
+  const { isClicked } = useContext(MediumClapContext);
   return (
     <span>
       <svg
@@ -192,15 +203,28 @@ const ClapIcon = ({ isClicked }) => {
 };
 
 /**
+ * subcomponents
+ */
+MediumClap.Icon = ClapIcon;
+MediumClap.Count = ClapCount;
+MediumClap.Total = CountTotal;
+/**
  * Usage *
  */
 const Usage = () => {
+  const [count, setCount] = useState(0);
+  const handleClap = clapState => {
+    setCount(clapState.count);
+  };
   return (
-    <MediumClap>
-      <ClapIcon />
-      <ClapCount />
-      <CountTotal />
-    </MediumClap>
+    <div style={{ width: "100%" }}>
+      <MediumClap onClap={handleClap}>
+        <MediumClap.Icon />
+        <MediumClap.Count />
+        <MediumClap.Total />
+      </MediumClap>
+      <div>{`You have clapped ${count} times`}</div>
+    </div>
   );
 };
 

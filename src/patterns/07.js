@@ -118,6 +118,9 @@ const INITIAL_STATE = {
 /**
  * custom hook for useClapState
  */
+const callFnsInSequence = (...fns) => (...args) => {
+  fns.forEach(fn => fn && fn(...args));
+};
 const useClapState = (initialState = INITIAL_STATE) => {
   const MAXIMUM_USER_CLAP = 20;
   const [clapState, setClapState] = useState(initialState);
@@ -131,16 +134,18 @@ const useClapState = (initialState = INITIAL_STATE) => {
     }));
   }, [count, countTotal]);
 
-  const getTogglerProps = () => ({
-    onClick: updateClapState,
-    "aria-pressed": clapState.isClicked
+  const getTogglerProps = ({ onClick, ...otherProps } = {}) => ({
+    onClick: callFnsInSequence(updateClapState, onClick),
+    "aria-pressed": clapState.isClicked,
+    ...otherProps
   });
 
-  const getCounterProps = () => ({
+  const getCounterProps = ({ ...otherProps }) => ({
     count,
     "aria-valuemax": MAXIMUM_USER_CLAP,
     "aria-valuemin": 0,
-    "aria-valuenow": count
+    "aria-valuenow": count,
+    ...otherProps
   });
 
   return { clapState, updateClapState, getTogglerProps, getCounterProps };
@@ -210,12 +215,7 @@ const ClapIcon = ({ isClicked }) => {
  * Usage *
  */
 const Usage = () => {
-  const {
-    clapState,
-    updateClapState,
-    getTogglerProps,
-    getCounterProps
-  } = useClapState();
+  const { clapState, getTogglerProps, getCounterProps } = useClapState();
   const { count, countTotal, isClicked } = clapState;
   const [{ clapRef, clapCountRef, clapTotalRef }, setRef] = useDOMRef();
 
@@ -228,9 +228,15 @@ const Usage = () => {
   useEffectAfterMount(() => {
     animationTimelineNew.replay();
   }, [count]);
-
+  const handleClick = () => {
+    console.log("Clicked on the button!");
+  };
   return (
-    <ClapContainer {...getTogglerProps()} setRef={setRef} data-refkey="clapRef">
+    <ClapContainer
+      {...getTogglerProps({ onClick: handleClick, "aria-pressed": false })}
+      setRef={setRef}
+      data-refkey="clapRef"
+    >
       <ClapIcon isClicked={isClicked} />
       <ClapCount
         {...getCounterProps()}

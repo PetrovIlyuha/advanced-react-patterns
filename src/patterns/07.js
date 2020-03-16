@@ -130,15 +130,19 @@ const useClapState = (initialState = INITIAL_STATE) => {
       countTotal: count < MAXIMUM_USER_CLAP ? countTotal + 1 : countTotal
     }));
   }, [count, countTotal]);
-
+  // accessibility
   // props collection for 'click'
   const togglerProps = {
-    onClick: updateClapState
+    onClick: updateClapState,
+    "aria-pressed": clapState.isClicked
   };
 
   // props collection for 'count'
   const counterProps = {
-    count
+    count,
+    "aria-valuemax": MAXIMUM_USER_CLAP,
+    "aria-valuemin": 0,
+    "aria-valuenow": count
   };
 
   return { clapState, updateClapState, togglerProps, counterProps };
@@ -230,7 +234,6 @@ const Usage = () => {
   return (
     <ClapContainer {...togglerProps} setRef={setRef} data-refkey="clapRef">
       <ClapIcon isClicked={isClicked} />
-      <div {...counterProps}>{count}</div>
       <ClapCount {...counterProps} setRef={setRef} data-refkey="clapCountRef" />
       <CountTotal
         countTotal={countTotal}

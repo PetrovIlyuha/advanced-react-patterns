@@ -121,6 +121,7 @@ const INITIAL_STATE = {
 const callFnsInSequence = (...fns) => (...args) => {
   fns.forEach(fn => fn && fn(...args));
 };
+
 const useClapState = (initialState = INITIAL_STATE) => {
   const MAXIMUM_USER_CLAP = 20;
   const [clapState, setClapState] = useState(initialState);

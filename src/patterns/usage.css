@@ -42,16 +42,25 @@
   position: relative;
   right: 10px;
 }
+
 .resetBtn {
   border-bottom: 1px solid #bdc3c7;
-  color: "#27ae60";
+  background-color: aqua;
+  color: sandybrown;
   margin-top: 30px;
-  padding: 10px 20px;
+  padding: 10px;
+  font-size: 1.2rem;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-content: center;
+  font-weight: bold;
+  border-style: hidden;
   border-radius: 20px;
-  outline: 0;
-  display: block;
-  width: 100%;
+  outline: none;
+  width: 120px;
 }
+
 .resetMsg {
   color: black;
 }

@@ -134,7 +134,8 @@ const usePrevious = value => {
 const callFnsInSequence = (...fns) => (...args) => {
   fns.forEach(fn => fn && fn(...args));
 };
-const reducer = ({ count, countTotal }, { type }) => {
+const MAXIMUM_USER_CLAP = 20;
+const internalReducer = ({ count, countTotal }, { type, payload }) => {
   switch (type) {
     case "clap":
       return {
@@ -142,11 +143,16 @@ const reducer = ({ count, countTotal }, { type }) => {
         count: Math.min(count + 1, MAXIMUM_USER_CLAP),
         countTotal: count < MAXIMUM_USER_CLAP ? countTotal + 1 : countTotal
       };
+    case "reset":
+      return payload;
     default:
       return state;
   }
 };
-const useClapState = (initialState = INITIAL_STATE) => {
+const useClapState = (
+  initialState = INITIAL_STATE,
+  reducer = internalReducer
+) => {
   const MAXIMUM_USER_CLAP = 20;
   const userInitialState = useRef(initialState);
 
@@ -160,10 +166,10 @@ const useClapState = (initialState = INITIAL_STATE) => {
   const prevCount = usePrevious(count);
   const reset = useCallback(() => {
     if (prevCount !== count) {
-      dispatch(userInitialState.current);
+      dispatch({ type: "reset", payload: userInitialState.current });
       resetRef.current++;
     }
-  }, [prevCount, count, setClapState]);
+  }, [prevCount, count]);
 
   const getTogglerProps = ({ onClick, ...otherProps } = {}) => ({
     onClick: callFnsInSequence(updateClapState, onClick),
@@ -189,6 +195,11 @@ const useClapState = (initialState = INITIAL_STATE) => {
   };
 };
 
+useClapState.reducer = internalReducer;
+useClapState.types = {
+  clap: "clap",
+  reset: "reset"
+};
 /**
  * custom useEffectAfterMount Hook
  */
@@ -257,14 +268,24 @@ const userInitialState = {
   countTotal: 100,
   isClicked: false
 };
+
+// imported useClapState from '...'
 const Usage = () => {
+  const [timesClapped, setTimeClapped] = useState(0);
+  const isClapOverused = timesClapped >= 10;
+  const reducer = (state, action) => {
+    if (action.type === useClapState.types.clap && isClapOverused) {
+      return state;
+    }
+    return useClapState.reducer(state, action);
+  };
   const {
     clapState,
     getTogglerProps,
     getCounterProps,
     reset,
     resetDep
-  } = useClapState(userInitialState);
+  } = useClapState(userInitialState, reducer);
   const { count, countTotal, isClicked } = clapState;
   const [{ clapRef, clapCountRef, clapTotalRef }, setRef] = useDOMRef();
 
@@ -283,11 +304,12 @@ const Usage = () => {
   useEffectAfterMount(() => {
     setUpload(true);
     console.log("again...god");
+
     const id = setTimeout(() => {
       setUpload(false);
     }, 3000);
     return () => clearTimeout(id);
-  }, [resetDep, count]);
+  }, [resetDep]);
 
   const handleClick = () => {
     console.log("Clicked on the button!");
@@ -316,7 +338,7 @@ const Usage = () => {
           Reset
         </button>
         <pre className={userStyles.resetMsg}>
-          {JSON.stringify({ count, countTotal, isClicked })}
+          {JSON.stringify({ timesClapped, count, isClicked })}
         </pre>
         <pre className={userStyles.resetMsg}>
           {uploadingReset ? `uploading reset ${resetDep} ...` : ""}
